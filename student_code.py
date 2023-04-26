@@ -1,4 +1,5 @@
 import copy
+import time
 
 global coords
 coords = [[0,0],[0,1],[0,2],[1,0],[1,1],[1,2],[2,0],[2,1],[2,2]]
@@ -9,7 +10,6 @@ def get_manhattan_dist(current_board):
     dist = 0
     for i in range(1, 9):
         dist += abs(current_board[i][0] - coords[i - 1][0]) + abs(current_board[i][1] - coords[i - 1][1])
-    print("manhattan dist: ", dist)
     return dist
 
 def tiebreak(board1, board2):
@@ -21,8 +21,6 @@ def tiebreak(board1, board2):
                 ind1 = i
             if board2[i] == ind:
                 ind2 = i
-        print("ind1 ", ind1)
-        print("ind2 ", ind2)
         if ind1 > ind2:
             return False
         elif ind2 > ind1:
@@ -100,8 +98,8 @@ def add_node(parent, direction):
 
 # astar search
 def astar(board):
+    start_time = time.time()
     # initialize goal state, depth, steps, and path vars
-    goal_board = [[2,2],[0,0],[0,1],[0,2],[1,0],[1,1],[1,2],[2,0],[2,1]]
     explored = []
     frontier = []
     steps = 0
@@ -115,20 +113,13 @@ def astar(board):
                 start_board.append(coords[j])
 
     # create the first node ([board, depth, man_dist, f(n), path])
-    print("initialize")
     dist = get_manhattan_dist(start_board)
-    # test_board = [[2,2],[2,1],[0,1],[0,2],[1,0],[1,1],[1,2],[2,0],[0,0]]
     frontier.append([start_board, 0, dist, dist, []])
-    # explored.append([test_board, 0, dist, dist, []])
-    # frontier.append([test_board, 0, dist, dist, []])
-    print('frontier: ', frontier)
 
-    cap = 0
-    print("enter loop")
-    while len(frontier) > 0 and cap < 1:
+    while len(frontier) > 0:
         # increment steps
         steps += 1
-        print("steps: ", steps)
+        # print("steps: ", steps)
         # go through each node in fronteir and look for the one with the lowest f(n)
         best_node_ind = 0
         for i in range(1, len(frontier)):
@@ -139,12 +130,15 @@ def astar(board):
             # if it is less than the current best_node_ind save the index
             elif frontier[i][3] < frontier[best_node_ind][3]:
                 best_node_ind = i
-
+        # print("BEST NODE")
+        # print(best_node_ind)
         # check if this node is the goal state, if it is return the info
         best_node = frontier[best_node_ind]
         if get_manhattan_dist(best_node[0]) == 0:
-            depth = best_node[0][1]
-            path = best_node[0][4]
+            print("BEST NODE: ", best_node)
+            depth = best_node[1]
+            path = best_node[4]
+            print(path)
             break
         else:
             # check if this node had already been expanded
@@ -152,27 +146,58 @@ def astar(board):
             for node in explored:
                 if node[0] == best_node[0]:
                     found = True
-                    # print('there')
-                # else:
-                #     print('not there')
-            # print(best_node[0])
-            # print(best_node[0][0])
-            # print(best_node[0][0][1])
+                    steps -= 1
             # create variables to make it readable
             x = best_node[0][0][1]
             y = best_node[0][0][0]
             # if the node was not found in explored then get its children and add them
             if found == False:
                 if y > 0:
-                    frontier.append(add_node(best_node, 0))
+                    check = False
+                    new_node = add_node(best_node, 0)
+                    for node in explored:
+                        if node[0] == new_node[0]:
+                            check = True
+                    if check == False:
+                        frontier.append(new_node)
                 if x < 2:
-                    frontier.append(add_node(best_node, 1))
+                    check = False
+                    new_node = add_node(best_node, 1)
+                    for node in explored:
+                        if node[0] == new_node[0]:
+                            check = True
+                    if check == False:
+                        frontier.append(new_node)
                 if y < 2:
-                    frontier.append(add_node(best_node, 2))
+                    check = False
+                    new_node = add_node(best_node, 2)
+                    for node in explored:
+                        if node[0] == new_node[0]:
+                            check = True
+                    if check == False:
+                        frontier.append(new_node)
                 if x > 0:
-                    frontier.append(add_node(best_node, 3))
-        cap +=1
+                    check = False
+                    new_node = add_node(best_node, 3)
+                    for node in explored:
+                        if node[0] == new_node[0]:
+                            check = True
+                    if check == False:
+                        frontier.append(new_node)
 
+            # append this board to explored
+            explored.append(best_node)
+            # delete the current node and all other nodes that have the same board
+            board_to_delete = copy.deepcopy(best_node[0])
+            frontier.pop(best_node_ind)
+            for i in range(len(frontier) - 1, 0, -1):
+                if frontier[i][0] == board_to_delete:
+                    frontier.pop(i)
+
+    end_time = time.time()
+
+    elapsed_time = end_time - start_time
+    print(f"Elapsed time: {elapsed_time} seconds")
     return depth, steps, path
 
 
